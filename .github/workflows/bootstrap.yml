@@ -1,0 +1,32 @@
+name: Assemble Antibody sources
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.bootstrap/**'
+      - 'scripts/assemble_bootstrap.py'
+      - '.github/workflows/bootstrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/assemble_bootstrap.py
+      - run: python scripts/preflight.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contracts/antibody.py tests/direct/test_antibody.py
+          if ! git diff --cached --quiet; then
+            git commit -m "feat: add Antibody contract and direct tests"
+            git push
+          fi
