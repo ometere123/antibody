@@ -11,7 +11,7 @@ TARGETS = [
     (
         "antibody.py.b64.",
         ROOT / "contracts" / "antibody.py",
-        "8da0806d06639fd5e78bec6bfdf0728af8f7d8a61095da5859fcbb44cb6c91e9",
+        "c81657a575c6029cbfcdf4d05c3bf07eb1d6d07677ab207f542572a597f58d19",
     ),
     (
         "test_antibody.py.b64.",
@@ -20,6 +20,7 @@ TARGETS = [
     ),
 ]
 
+assembled = []
 for prefix, destination, expected_sha in TARGETS:
     parts = sorted(BOOT.glob(prefix + "*"))
     if not parts:
@@ -27,10 +28,19 @@ for prefix, destination, expected_sha in TARGETS:
     encoded = "".join(part.read_text(encoding="utf-8").strip() for part in parts)
     decoded = base64.b64decode(encoded, validate=True)
     actual = hashlib.sha256(decoded).hexdigest()
-    if actual != expected_sha:
-        raise SystemExit(f"{destination}: sha256 mismatch {actual} != {expected_sha}")
+    print(f"{destination.relative_to(ROOT)} actual_sha256={actual} expected_sha256={expected_sha}")
+    assembled.append((destination, decoded, actual, expected_sha))
+
+mismatches = [
+    f"{destination.relative_to(ROOT)}: {actual} != {expected}"
+    for destination, _decoded, actual, expected in assembled
+    if actual != expected
+]
+if mismatches:
+    raise SystemExit("bootstrap integrity mismatch: " + "; ".join(mismatches))
+
+for destination, decoded, _actual, _expected in assembled:
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(decoded)
-    print(f"{destination.relative_to(ROOT)} {actual}")
 
 print("bootstrap assembly OK")
