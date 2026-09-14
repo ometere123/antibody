@@ -8,6 +8,8 @@ A confirmed failure does not disappear after the bounty is paid. It becomes a pe
 
 There is **no frontend**. Antibody is intentionally a contract primitive, not a Project submission.
 
+Program invariants, endpoint URLs, and artifact identifiers are owner-supplied. Definition hashes freeze exactly those submitted values; they do not prove that an endpoint runs the claimed artifact, that its behavior is complete, or that metadata is truthful. The same-address owner check blocks direct self-challenges only; it does not prevent related-wallet or sybil behavior.
+
 ## Network lock
 
 This repository targets the stable hosted **Studionet** only:
@@ -185,6 +187,8 @@ Opening a challenge reserves 2 GEN from the bounty pool.
 
 The reserved reward cannot be withdrawn while a challenge is pending.
 
+Outgoing GEN transfers are recorded by `PayoutSubmitted` with a monotonic payout ID, recipient, amount, and source reference. `get_payout(id)` reports `SUBMITTED_OUTCOME_REQUIRES_EXTERNAL_RECONCILIATION`; it does not claim that the child transfer was delivered. The parent Intelligent Contract has no synchronous child-receipt API. Clients must correlate the parent transaction's triggered child transaction IDs using the GenLayer client and inspect the child receipt. Failed child value is not automatically returned by the protocol. Antibody does not retry ambiguous payouts, because a retry could pay twice; a failed external payout currently has no safe on-chain recovery path.
+
 ## Version inheritance
 
 The strongest state transition is counterexample inheritance.
@@ -229,6 +233,7 @@ finalize_version(version_id)
 get_program(program_id)
 get_version(version_id)
 get_challenge(challenge_id)
+get_payout(payout_id)
 get_counterexample(counterexample_id)
 get_counterexample_by_index(program_id, local_index)
 get_regression(version_id, counterexample_index)

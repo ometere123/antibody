@@ -54,9 +54,13 @@ Transport failures, malformed HTTP/model output, and ambiguous judgments resolve
 
 Only `bounty_balance - bounty_reserved` may be withdrawn.
 
-### State before payout
+### External transfer lifecycle and recovery limit
 
-For confirmed challenges and withdrawals, storage accounting is updated before the outgoing transfer message is emitted.
+Antibody assigns every outgoing transfer a monotonic payout ID and persists its recipient, amount, purpose, and source record before emitting the external message. The durable status means `SUBMITTED_OUTCOME_REQUIRES_EXTERNAL_RECONCILIATION`, never “paid.” Integrators correlate the parent transaction with its triggered child transaction IDs and inspect the child receipt using the GenLayer client APIs. The on-chain contract cannot read that child receipt or safely distinguish pending from failed delivery. The protocol documents that failed child value is not automatically returned. Therefore Antibody never retries an ambiguous payout: replaying it could double-pay, while a failed transfer currently has no safe on-chain recovery path. Applications must treat a payout as pending until the canonical child receipt confirms success. This is a protocol/API limitation, not a delivery guarantee.
+
+Challenge reservation and bounty accounting are updated before the outgoing transfer message is emitted. A confirmed counterexample remains permanent even if the separately tracked payout child fails; integrators must alert on failed payout receipts.
+
+The same-address owner challenge check blocks direct self-farming only. It does not establish real-world identity and cannot prevent related-wallet or sybil challenges.
 
 ## Endpoint admission
 

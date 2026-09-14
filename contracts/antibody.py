@@ -43,6 +43,7 @@ CHALLENGE_CONFIRMED = 1
 CHALLENGE_REJECTED = 2
 CHALLENGE_INCONCLUSIVE = 3
 CHALLENGE_CANCELLED = 4
+CHALLENGE_DUPLICATE = 5
 
 # Semantic observation verdicts.
 VERDICT_VIOLATION = 1
@@ -155,6 +156,16 @@ class RegressionResult:
     tested_at: str
 
 
+@allow_storage
+@dataclass
+class Payout:
+    recipient: Address
+    amount: u256
+    reference_kind: str
+    reference_id: u256
+    submitted_at: str
+
+
 # ---------------------------------------------------------------------------
 # Cross-contract interface
 # ---------------------------------------------------------------------------
@@ -166,6 +177,7 @@ class IAntibody:
         def get_program(self, program_id: u256) -> dict: ...
         def get_version(self, version_id: u256) -> dict: ...
         def get_challenge(self, challenge_id: u256) -> dict: ...
+        def get_payout(self, payout_id: u256) -> dict: ...
         def get_counterexample(self, counterexample_id: u256) -> dict: ...
         def get_counterexample_by_index(self, program_id: u256, local_index: int) -> dict: ...
         def get_regression(self, version_id: u256, counterexample_index: int) -> dict: ...
@@ -225,6 +237,10 @@ class RegressionResolved(gl.Event):
 
 class VersionCertified(gl.Event):
     def __init__(self, version_id: u256, program_id: u256, /, **blob): ...
+
+
+class PayoutSubmitted(gl.Event):
+    def __init__(self, payout_id: u256, recipient: Address, /, **blob): ...
 
 
 # ---------------------------------------------------------------------------
@@ -370,6 +386,7 @@ def challenge_status_name(status: int) -> str:
         CHALLENGE_REJECTED: "REJECTED",
         CHALLENGE_INCONCLUSIVE: "INCONCLUSIVE",
         CHALLENGE_CANCELLED: "CANCELLED",
+        CHALLENGE_DUPLICATE: "DUPLICATE",
     }.get(int(status), "UNKNOWN")
 
 
@@ -557,6 +574,7 @@ class Antibody(gl.Contract):
     challenges: TreeMap[u256, Challenge]
     counterexamples: TreeMap[u256, Counterexample]
     regressions: TreeMap[u256, RegressionResult]
+    payouts: TreeMap[u256, Payout]
 
     # Indexed relations avoid nested storage arrays and keep bounded iteration.
     program_version_ids: TreeMap[u256, u256]
@@ -570,12 +588,14 @@ class Antibody(gl.Contract):
     next_version_id: u256
     next_challenge_id: u256
     next_counterexample_id: u256
+    next_payout_id: u256
 
     def __init__(self):
         self.next_program_id = u256(1)
         self.next_version_id = u256(1)
         self.next_challenge_id = u256(1)
         self.next_counterexample_id = u256(1)
+        self.next_payout_id = u256(1)
 
     # -- internal ---------------------------------------------------------
 
@@ -628,18 +648,34 @@ class Antibody(gl.Contract):
             "kind": "confirmed",
         }))
 
-    def _open_probe_key(self, program_id: u256, version_id: u256, probe_digest: str) -> u256:
+    def _open_probe_key(self, program_id: u256, probe_digest: str) -> u256:
         return hash_key(canonical_json({
             "program_id": int(program_id),
-            "version_id": int(version_id),
             "probe_digest": str(probe_digest),
             "kind": "open",
         }))
 
-    def _pay(self, recipient: Address, amount: u256) -> None:
+    def _pay(self, recipient: Address, amount: u256, reference_kind: str, reference_id: u256) -> None:
         if int(amount) <= 0:
             return
         target = recipient if isinstance(recipient, Address) else Address(recipient)
+        payout_id = self.next_payout_id
+        self.next_payout_id = u256(int(payout_id) + 1)
+        payout = self.payouts.get_or_insert_default(payout_id)
+        payout.recipient = target
+        payout.amount = amount
+        payout.reference_kind = reference_kind
+        payout.reference_id = reference_id
+        payout.submitted_at = current_datetime()
+        # External child-message outcomes are not synchronously available to
+        # the parent IC. This durable state means submitted, never delivered.
+        PayoutSubmitted(
+            payout_id,
+            target,
+            amount=int(amount),
+            reference_kind=reference_kind,
+            reference_id=int(reference_id),
+        ).emit()
         _Payee(target).emit_transfer(value=amount)
 
     def _observe_probe(
@@ -856,7 +892,7 @@ class Antibody(gl.Contract):
         if requested <= 0 or requested > available:
             raise gl.vm.UserError(f"{ERR_EXPECTED}: amount exceeds unreserved bounty")
         program.bounty_balance = u256(int(program.bounty_balance) - requested)
-        self._pay(program.owner, u256(requested))
+        self._pay(program.owner, u256(requested), "bounty_withdrawal", program_id)
         BountyWithdrawn(program_id, program.owner, amount=requested).emit()
 
     @gl.public.write
@@ -957,7 +993,7 @@ class Antibody(gl.Contract):
         if existing_confirmed is not None and int(existing_confirmed) != 0:
             raise gl.vm.UserError(f"{ERR_EXPECTED}: probe already exists in regression corpus")
 
-        open_key = self._open_probe_key(program_id, version_id, probe_digest)
+        open_key = self._open_probe_key(program_id, probe_digest)
         existing_open = self.open_probe_keys.get(open_key)
         if existing_open is not None and int(existing_open) != 0:
             raise gl.vm.UserError(f"{ERR_EXPECTED}: identical challenge already pending")
@@ -1004,14 +1040,14 @@ class Antibody(gl.Contract):
         program = self._program(challenge.program_id)
 
         self._release_challenge_reservation(program, challenge)
-        open_key = self._open_probe_key(challenge.program_id, challenge.version_id, challenge.probe_digest)
+        open_key = self._open_probe_key(challenge.program_id, challenge.probe_digest)
         self.open_probe_keys[open_key] = u256(0)
         challenge.status = u8(CHALLENGE_CANCELLED)
         challenge.resolved_at = current_datetime()
         bond = challenge.bond
         challenge.bond = u256(0)
         challenge.reserved_reward = u256(0)
-        self._pay(challenge.challenger, bond)
+        self._pay(challenge.challenger, bond, "challenge_cancel", challenge_id)
         ChallengeResolved(challenge_id, u8(VERDICT_INCONCLUSIVE), status=CHALLENGE_CANCELLED).emit()
 
     @gl.public.write
@@ -1031,6 +1067,14 @@ class Antibody(gl.Contract):
 
         result = self._observe_probe(program_name, invariant, version_label, endpoint, probe)
         verdict = int(result["verdict"])
+
+        # Admission blocks concurrent duplicates across version changes, and
+        # this authoritative resolution check also protects older/competing
+        # pending challenges if one probe was confirmed first.
+        confirmed_key = self._confirmed_probe_key(challenge.program_id, challenge.probe_digest)
+        existing_confirmed = self.confirmed_probe_keys.get(confirmed_key)
+        already_confirmed = existing_confirmed is not None and int(existing_confirmed) != 0
+
         challenge.verdict = u8(verdict)
         challenge.http_class = u8(int(result.get("http_class", 0)))
         challenge.reason_code = clean_text(result.get("reason_code", ""), 80)
@@ -1038,13 +1082,27 @@ class Antibody(gl.Contract):
         challenge.resolved_at = current_datetime()
 
         self._release_challenge_reservation(program, challenge)
-        open_key = self._open_probe_key(challenge.program_id, challenge.version_id, challenge.probe_digest)
+        open_key = self._open_probe_key(challenge.program_id, challenge.probe_digest)
         self.open_probe_keys[open_key] = u256(0)
 
         bond = int(challenge.bond)
         reward = int(challenge.reserved_reward)
         challenge.bond = u256(0)
         challenge.reserved_reward = u256(0)
+
+        if already_confirmed:
+            # A losing duplicate receives its bond back. It creates no second
+            # counterexample and consumes no reward.
+            challenge.status = u8(CHALLENGE_DUPLICATE)
+            challenge.reason_code = "DUPLICATE_CONFIRMED"
+            self._pay(challenge.challenger, u256(bond), "duplicate_refund", challenge_id)
+            ChallengeResolved(
+                challenge_id,
+                u8(verdict),
+                status=int(challenge.status),
+                reason_code=str(challenge.reason_code),
+            ).emit()
+            return
 
         if verdict == VERDICT_VIOLATION:
             local_index = int(program.counterexample_count) + 1
@@ -1068,7 +1126,6 @@ class Antibody(gl.Contract):
                 raise gl.vm.UserError(f"{ERR_EXPECTED}: reserved reward exceeds bounty balance")
             program.bounty_balance = u256(int(program.bounty_balance) - reward)
 
-            confirmed_key = self._confirmed_probe_key(challenge.program_id, challenge.probe_digest)
             self.confirmed_probe_keys[confirmed_key] = counterexample_id
             challenge.status = u8(CHALLENGE_CONFIRMED)
             challenge.counterexample_id = counterexample_id
@@ -1080,7 +1137,7 @@ class Antibody(gl.Contract):
             )
 
             # State is final before external payout is emitted.
-            self._pay(challenge.challenger, u256(bond + reward))
+            self._pay(challenge.challenger, u256(bond + reward), "confirmed_challenge", challenge_id)
             CounterexampleConfirmed(
                 counterexample_id,
                 challenge.program_id,
@@ -1096,7 +1153,7 @@ class Antibody(gl.Contract):
 
         elif verdict == VERDICT_INCONCLUSIVE:
             challenge.status = u8(CHALLENGE_INCONCLUSIVE)
-            self._pay(challenge.challenger, u256(bond))
+            self._pay(challenge.challenger, u256(bond), "inconclusive_refund", challenge_id)
 
         ChallengeResolved(
             challenge_id,
@@ -1256,6 +1313,21 @@ class Antibody(gl.Contract):
             "reason_code": str(challenge.reason_code),
             "evidence": str(challenge.evidence),
             "counterexample_id": int(challenge.counterexample_id),
+        }
+
+    @gl.public.view
+    def get_payout(self, payout_id: u256) -> dict:
+        payout = self.payouts.get(payout_id)
+        if payout is None:
+            raise gl.vm.UserError(f"{ERR_EXPECTED}: unknown payout")
+        return {
+            "id": int(payout_id),
+            "recipient": str(payout.recipient),
+            "amount": int(payout.amount),
+            "reference_kind": str(payout.reference_kind),
+            "reference_id": int(payout.reference_id),
+            "status": "SUBMITTED_OUTCOME_REQUIRES_EXTERNAL_RECONCILIATION",
+            "submitted_at": str(payout.submitted_at),
         }
 
     @gl.public.view

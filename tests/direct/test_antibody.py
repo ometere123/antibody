@@ -39,7 +39,10 @@ def deploy_program(direct_vm, direct_deploy, direct_alice, endpoint=ENDPOINT_V1)
 
 
 def mock_response(direct_vm, endpoint, body, verdict, evidence="", reason="SAFE_RESPONSE"):
-    direct_vm.mock_web(r".*agent\.example\.com/antibody-test/.*", {"status": 200, "body": body})
+    direct_vm.mock_web(
+        r".*agent\.example\.com/antibody-test/.*",
+        {"method": "POST", "status": 200, "body": body},
+    )
     direct_vm.mock_llm(JUDGE, decision(verdict, evidence, reason))
 
 
@@ -111,6 +114,87 @@ def test_challenge_reserves_reward_and_exact_duplicate_is_blocked(
     assert contract.get_challenge(challenge_id)["status_name"] == "PENDING"
 
 
+def test_probe_duplicate_is_blocked_across_versions_and_after_confirmation(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    contract, program_id, v1 = deploy_program(direct_vm, direct_deploy, direct_alice)
+    c1 = open_challenge(contract, direct_vm, direct_bob, program_id, v1, ATTACK)
+    bounty_before = contract.get_program(program_id)["bounty_balance"]
+
+    # A version switch must not create a second pending reward for the same
+    # program/probe, even though the first challenge targets the old version.
+    v2 = contract.register_version(program_id, "v2", ENDPOINT_V2, "sha256:agent-v2")
+    with direct_vm.prank(direct_bob):
+        direct_vm.value = BOND
+        with direct_vm.expect_revert("identical challenge already pending"):
+            contract.open_challenge(program_id, v2, ATTACK)
+        direct_vm.value = 0
+
+    mock_response(
+        direct_vm,
+        ENDPOINT_V1,
+        VIOLATING_RESPONSE,
+        "VIOLATION",
+        "The previous user's secret token is tok_live_ABC123.",
+        "SECRET_DISCLOSURE",
+    )
+    contract.resolve_challenge(c1)
+    assert contract.get_challenge(c1)["status_name"] == "CONFIRMED"
+    assert contract.get_program(program_id)["counterexample_count"] == 1
+    payout = contract.get_payout(1)
+    assert payout["status"] == "SUBMITTED_OUTCOME_REQUIRES_EXTERNAL_RECONCILIATION"
+    assert payout["reference_kind"] == "confirmed_challenge"
+    assert payout["reference_id"] == challenge_id
+    assert payout["amount"] == BOND + BOUNTY
+    assert contract.get_program(program_id)["bounty_balance"] == bounty_before - BOUNTY
+    assert contract.get_program(program_id)["bounty_reserved"] == 0
+
+    # Once confirmed, the same probe cannot be re-opened on the successor.
+    with direct_vm.prank(direct_bob):
+        direct_vm.value = BOND
+        with direct_vm.expect_revert("probe already exists in regression corpus"):
+            contract.open_challenge(program_id, v2, ATTACK)
+        direct_vm.value = 0
+    assert contract.get_program(program_id)["counterexample_count"] == 1
+    assert contract.get_program(program_id)["bounty_balance"] == bounty_before - BOUNTY
+
+
+def test_resolution_rechecks_confirmed_probe_and_refunds_losing_duplicate(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    contract, program_id, version_id = deploy_program(direct_vm, direct_deploy, direct_alice)
+    challenge_id = open_challenge(contract, direct_vm, direct_bob, program_id, version_id)
+    before = contract.get_program(program_id)
+
+    # Model a legacy/already-in-flight competing challenge whose identical
+    # probe confirmed after this challenge was admitted. Admission alone is
+    # insufficient: resolution must consult the canonical confirmed key.
+    digest = contract.get_challenge(challenge_id)["probe_digest"]
+    confirmed_key = contract._confirmed_probe_key(program_id, digest)
+    contract.confirmed_probe_keys[confirmed_key] = 1
+
+    mock_response(
+        direct_vm,
+        ENDPOINT_V1,
+        VIOLATING_RESPONSE,
+        "VIOLATION",
+        "The previous user's secret token is tok_live_ABC123.",
+        "SECRET_DISCLOSURE",
+    )
+    contract.resolve_challenge(challenge_id)
+
+    challenge = contract.get_challenge(challenge_id)
+    after = contract.get_program(program_id)
+    assert challenge["status_name"] == "DUPLICATE"
+    assert challenge["reason_code"] == "DUPLICATE_CONFIRMED"
+    assert after["counterexample_count"] == before["counterexample_count"]
+    assert after["bounty_balance"] == before["bounty_balance"]
+    assert after["bounty_reserved"] == 0
+    payout = contract.get_payout(1)
+    assert payout["reference_kind"] == "duplicate_refund"
+    assert payout["amount"] == BOND
+
+
 def test_reserved_reward_cannot_be_withdrawn(direct_vm, direct_deploy, direct_alice, direct_bob):
     contract, program_id, version_id = deploy_program(direct_vm, direct_deploy, direct_alice)
     open_challenge(contract, direct_vm, direct_bob, program_id, version_id)
@@ -177,7 +261,10 @@ def test_transport_failure_is_inconclusive_not_a_fourth_verdict(
 ):
     contract, program_id, version_id = deploy_program(direct_vm, direct_deploy, direct_alice)
     challenge_id = open_challenge(contract, direct_vm, direct_bob, program_id, version_id)
-    direct_vm.mock_web(r".*agent\.example\.com/antibody-test/.*", {"status": 503, "body": "offline"})
+    direct_vm.mock_web(
+        r".*agent\.example\.com/antibody-test/.*",
+        {"method": "POST", "status": 503, "body": "offline"},
+    )
 
     contract.resolve_challenge(challenge_id)
 
@@ -327,6 +414,9 @@ def test_validator_replays_probe_and_rejects_disagreement(
     assert direct_vm.run_validator() is True
 
     direct_vm.clear_mocks()
-    direct_vm.mock_web(r".*agent\.example\.com/antibody-test/.*", {"status": 200, "body": SAFE_RESPONSE})
+    direct_vm.mock_web(
+        r".*agent\.example\.com/antibody-test/.*",
+        {"method": "POST", "status": 200, "body": SAFE_RESPONSE},
+    )
     direct_vm.mock_llm(JUDGE, decision("NO_VIOLATION"))
     assert direct_vm.run_validator() is False
