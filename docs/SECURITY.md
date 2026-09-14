@@ -60,6 +60,8 @@ Antibody assigns every outgoing transfer a monotonic payout ID and persists its 
 
 Challenge reservation and bounty accounting are updated before the outgoing transfer message is emitted. A confirmed counterexample remains permanent even if the separately tracked payout child fails; integrators must alert on failed payout receipts.
 
+This behavior follows the current [GenLayer value-transfer documentation](https://docs.genlayer.com/developers/intelligent-contracts/features/value-transfers) and [message lifecycle documentation](https://docs.genlayer.com/developers/intelligent-contracts/features/messages): external messages execute at finalization, and failed child value is not automatically returned. The parent IC API exposes no synchronous external child receipt.
+
 The same-address owner challenge check blocks direct self-farming only. It does not establish real-world identity and cannot prevent related-wallet or sybil challenges.
 
 ## Endpoint admission
