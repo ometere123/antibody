@@ -4,7 +4,7 @@ No canonical deployment is recorded yet.
 
 ## Current environment blocker
 
-No deployment was attempted. The existing RPC check to `https://studio.genlayer.com/api` returned HTTP 403 instead of an `eth_chainId` result, so chain 61999 could not be verified. The installed GenLayer CLI's read-only `account show` reported its active account on `studio-dev` (chain ID 61997), which is not an allowed deployment context. Do not run deployment until RPC access is restored and the existing CLI reports the deployer on Studionet chain 61999. The repository's synthetic fixture is currently a localhost-only development server; no public HTTPS fixture host is configured, so live lifecycle evidence also remains unavailable.
+No deployment was attempted. The existing RPC check to `https://studio.genlayer.com/api` returned HTTP 403 instead of an `eth_chainId` result, so chain 61999 could not be verified. The installed GenLayer CLI's read-only `account show` reported its active account on a development network, which is not an allowed deployment context. Do not run deployment until RPC access is restored and the existing CLI reports the deployer on Studionet chain 61999. The repository's synthetic fixture is currently a localhost-only development server; no public HTTPS fixture host is configured, so live lifecycle evidence also remains unavailable.
 
 This file is intentionally evidence-only: addresses and transaction hashes must be added only after finalized execution on the target network.
 
