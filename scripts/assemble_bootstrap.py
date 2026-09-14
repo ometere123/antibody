@@ -16,7 +16,7 @@ TARGETS = [
     (
         "test_antibody.py.b64.",
         ROOT / "tests" / "direct" / "test_antibody.py",
-        "aa453ceda2664b93fcc63735fef6dbbd95c615d803d953a3e35c433b3331ffee",
+        "66f2117c5698fbd30f8f8329bd5ac639fc4a700c273094573f018c98606aacf8",
     ),
 ]
 

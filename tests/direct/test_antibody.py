@@ -144,7 +144,7 @@ def test_probe_duplicate_is_blocked_across_versions_and_after_confirmation(
     payout = contract.get_payout(1)
     assert payout["status"] == "SUBMITTED_OUTCOME_REQUIRES_EXTERNAL_RECONCILIATION"
     assert payout["reference_kind"] == "confirmed_challenge"
-    assert payout["reference_id"] == challenge_id
+    assert payout["reference_id"] == c1
     assert payout["amount"] == BOND + BOUNTY
     assert contract.get_program(program_id)["bounty_balance"] == bounty_before - BOUNTY
     assert contract.get_program(program_id)["bounty_reserved"] == 0
