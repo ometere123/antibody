@@ -46,9 +46,9 @@ A genuinely borderline response may fail to reach consensus. In that case the ch
 
 A clear `NO_VIOLATION` transfers the challenger's exact bond into the future bounty pool. This deters free spam.
 
-### Inconclusive or unavailable challenge
+### Inconclusive challenge
 
-The bond is refunded because Antibody does not punish a challenger when the network could not safely adjudicate the claim.
+Transport failures, malformed HTTP/model output, and ambiguous judgments resolve as `INCONCLUSIVE`. The bond is refunded because Antibody does not punish a challenger when the network could not safely adjudicate the claim. Consensus exposes exactly three verdicts: `VIOLATION`, `NO_VIOLATION`, and `INCONCLUSIVE`.
 
 ### Owner withdrawal
 

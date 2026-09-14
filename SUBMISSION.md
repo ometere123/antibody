@@ -109,7 +109,7 @@ Capture finalized receipts showing:
 - exact confirmed probe cannot earn a second bounty;
 - owner cannot withdraw reserved bounty;
 - clear `NO_VIOLATION` challenge transfers the bond into the bounty pool;
-- `INCONCLUSIVE`/`UNAVAILABLE` does not mutate the corpus.
+- `INCONCLUSIVE`, including transport failures, does not mutate the corpus.
 
 ## Validation status before live deployment
 

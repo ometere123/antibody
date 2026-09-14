@@ -142,7 +142,7 @@ def main() -> int:
     for marker in (
         "VERDICT_VIOLATION", "counterexample_count", "confirmed_probe_keys",
         "_invalidate_for_new_counterexample", "bounty_balance", "_pay",
-        "VERDICT_NO_VIOLATION", "VERDICT_UNAVAILABLE", "CHALLENGE_INCONCLUSIVE",
+        "VERDICT_NO_VIOLATION", "VERDICT_INCONCLUSIVE", "CHALLENGE_INCONCLUSIVE",
     ):
         check(marker in resolve_text, f"settlement invariant missing: {marker}")
         checks += 1

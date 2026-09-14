@@ -159,7 +159,7 @@ After consensus, ordinary contract logic handles:
 - exact duplicate suppression;
 - bounty payout;
 - rejected-challenge bond capture;
-- refund on unavailable/inconclusive rounds;
+- refund on inconclusive rounds, including unavailable endpoints;
 - permanent counterexample indexing;
 - invalidation of prior `REGRESSION_CLEAR` states when a new counterexample appears;
 - version breach state;
@@ -181,7 +181,7 @@ Opening a challenge reserves 2 GEN from the bounty pool.
 - `VIOLATION`: challenger receives bond + 2 GEN; failure enters permanent corpus.
 - `NO_VIOLATION`: challenger's 0.1 GEN bond is added to the bounty pool.
 - `INCONCLUSIVE`: bond is returned; corpus is unchanged.
-- `UNAVAILABLE`: bond is returned; corpus is unchanged.
+- transport failures and malformed observations are `INCONCLUSIVE`: bond is returned; corpus is unchanged.
 
 The reserved reward cannot be withdrawn while a challenge is pending.
 

@@ -172,6 +172,23 @@ def test_inconclusive_challenge_does_not_mutate_corpus(
     assert contract.get_program(program_id)["bounty_reserved"] == 0
 
 
+def test_transport_failure_is_inconclusive_not_a_fourth_verdict(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    contract, program_id, version_id = deploy_program(direct_vm, direct_deploy, direct_alice)
+    challenge_id = open_challenge(contract, direct_vm, direct_bob, program_id, version_id)
+    direct_vm.mock_web(r".*agent\.example\.com/antibody-test/.*", {"status": 503, "body": "offline"})
+
+    contract.resolve_challenge(challenge_id)
+
+    challenge = contract.get_challenge(challenge_id)
+    assert challenge["status_name"] == "INCONCLUSIVE"
+    assert challenge["verdict_name"] == "INCONCLUSIVE"
+    assert challenge["reason_code"] == "UPSTREAM_5XX"
+    assert contract.get_program(program_id)["counterexample_count"] == 0
+    assert contract.get_program(program_id)["bounty_reserved"] == 0
+
+
 def test_violation_requires_grounded_response_excerpt(
     direct_vm, direct_deploy, direct_alice, direct_bob
 ):

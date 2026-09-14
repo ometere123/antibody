@@ -46,14 +46,13 @@ A validator accepts a leader only when verdict and HTTP response class match its
 
 ## Deterministic settlement
 
-Consensus cannot directly select protocol consequences. The four possible observations map deterministically:
+Consensus cannot directly select protocol consequences. The three possible verdicts map deterministically:
 
 | Verdict | Challenge consequence |
 |---|---|
 | `VIOLATION` | create counterexample, mark discovery version breached, pay bond + reserved reward |
 | `NO_VIOLATION` | reject challenge, add challenger bond to bounty pool |
-| `INCONCLUSIVE` | no corpus mutation, refund bond |
-| `UNAVAILABLE` | no corpus mutation, refund bond |
+| `INCONCLUSIVE` | includes transport failures and malformed observations; no corpus mutation, refund bond |
 
 ## Reserved-bounty invariant
 

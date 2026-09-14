@@ -24,4 +24,19 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install --index-url https://pypi.org/simple -r requirements-test.txt
+      # genlayer-test 0.29.2 still asks GitHub for the legacy
+      # genvm-universal.tar.xz name. GenVM v0.3.0-rc7 publishes the same
+      # runner bundle as genvm-runners-all.tar.xz, so seed the loader cache
+      # from the real release asset and verify its published digest.
+      - name: Prepare pinned GenVM Direct Mode runners
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache_dir="$HOME/.cache/gltest-direct"
+          mkdir -p "$cache_dir"
+          archive="$cache_dir/genvm-universal-v0.3.0-rc7.tar.xz"
+          curl --fail --location --retry 3 \
+            https://github.com/genlayerlabs/genvm/releases/download/v0.3.0-rc7/genvm-runners-all.tar.xz \
+            --output "$archive"
+          echo 'e218a1854214681560351051f76fe2b878545cf3409455ef372d57014a88ca67  '"$archive" | sha256sum --check --status
       - run: pytest tests/direct -v -s

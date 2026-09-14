@@ -42,14 +42,12 @@ CHALLENGE_PENDING = 0
 CHALLENGE_CONFIRMED = 1
 CHALLENGE_REJECTED = 2
 CHALLENGE_INCONCLUSIVE = 3
-CHALLENGE_UNAVAILABLE = 4
-CHALLENGE_CANCELLED = 5
+CHALLENGE_CANCELLED = 4
 
 # Semantic observation verdicts.
 VERDICT_VIOLATION = 1
 VERDICT_NO_VIOLATION = 2
 VERDICT_INCONCLUSIVE = 3
-VERDICT_UNAVAILABLE = 4
 
 MAX_NAME_LEN = 96
 MAX_VERSION_LABEL_LEN = 96
@@ -354,7 +352,6 @@ def verdict_name(verdict: int) -> str:
         VERDICT_VIOLATION: "VIOLATION",
         VERDICT_NO_VIOLATION: "NO_VIOLATION",
         VERDICT_INCONCLUSIVE: "INCONCLUSIVE",
-        VERDICT_UNAVAILABLE: "UNAVAILABLE",
     }.get(int(verdict), "INCONCLUSIVE")
 
 
@@ -372,7 +369,6 @@ def challenge_status_name(status: int) -> str:
         CHALLENGE_CONFIRMED: "CONFIRMED",
         CHALLENGE_REJECTED: "REJECTED",
         CHALLENGE_INCONCLUSIVE: "INCONCLUSIVE",
-        CHALLENGE_UNAVAILABLE: "UNAVAILABLE",
         CHALLENGE_CANCELLED: "CANCELLED",
     }.get(int(status), "UNKNOWN")
 
@@ -479,7 +475,6 @@ def valid_observation(value: typing.Any) -> bool:
         VERDICT_VIOLATION,
         VERDICT_NO_VIOLATION,
         VERDICT_INCONCLUSIVE,
-        VERDICT_UNAVAILABLE,
     ):
         return False
     if isinstance(http_class, bool) or not isinstance(http_class, int) or not 0 <= http_class <= 5:
@@ -668,7 +663,7 @@ class Antibody(gl.Contract):
                 )
             except Exception as exc:
                 return {
-                    "verdict": VERDICT_UNAVAILABLE,
+                    "verdict": VERDICT_INCONCLUSIVE,
                     "http_class": 0,
                     "reason_code": "TRANSPORT_UNAVAILABLE",
                     "evidence": "",
@@ -679,7 +674,7 @@ class Antibody(gl.Contract):
                 code = response_status(response)
             except Exception:
                 return {
-                    "verdict": VERDICT_UNAVAILABLE,
+                    "verdict": VERDICT_INCONCLUSIVE,
                     "http_class": 0,
                     "reason_code": "MALFORMED_HTTP_RESPONSE",
                     "evidence": "",
@@ -688,7 +683,7 @@ class Antibody(gl.Contract):
 
             if code >= 500:
                 return {
-                    "verdict": VERDICT_UNAVAILABLE,
+                    "verdict": VERDICT_INCONCLUSIVE,
                     "http_class": response_class(code),
                     "reason_code": "UPSTREAM_5XX",
                     "evidence": "",
@@ -1099,11 +1094,7 @@ class Antibody(gl.Contract):
             # The failed challenger bond becomes additional future bounty.
             program.bounty_balance = u256(int(program.bounty_balance) + bond)
 
-        elif verdict == VERDICT_UNAVAILABLE:
-            challenge.status = u8(CHALLENGE_UNAVAILABLE)
-            self._pay(challenge.challenger, u256(bond))
-
-        else:
+        elif verdict == VERDICT_INCONCLUSIVE:
             challenge.status = u8(CHALLENGE_INCONCLUSIVE)
             self._pay(challenge.challenger, u256(bond))
 

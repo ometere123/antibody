@@ -11,12 +11,12 @@ TARGETS = [
     (
         "antibody.py.b64.",
         ROOT / "contracts" / "antibody.py",
-        "c81657a575c6029cbfcdf4d05c3bf07eb1d6d07677ab207f542572a597f58d19",
+        "1987c967255bc4e1a49eef04561403d472994ab6df8cc74f3493759d71856828",
     ),
     (
         "test_antibody.py.b64.",
         ROOT / "tests" / "direct" / "test_antibody.py",
-        "8755ad106daadbc07c3d699a8a2dc17cc8a00561ca4d6d98f8c6710e5ffac3c3",
+        "fd2ba7ca94c6a9809557a9dc9e646afea90397c82f6147c80ccf3e2620855de2",
     ),
 ]
 
