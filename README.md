@@ -282,6 +282,18 @@ python scripts/deploy_studionet.py
 
 The deploy helper uses the explicit stable Studio RPC and refuses to continue unless the RPC reports chain ID `61999`.
 
+## Verified deployment
+
+Antibody has a finalized successful deployment on Studionet (chain `61999`):
+
+- Contract: `0x81B956AE9Ae7825CE4d2dE2FA2b9a8E31Aec42fb`
+- Transaction: `0x8d20d16b94361c6e104dd3c3c7741f2605a5190f5e4a23b56ace2a0545765d7e`
+- Explorer: [Studionet contract](https://explorer-studio.genlayer.com/address/0x81B956AE9Ae7825CE4d2dE2FA2b9a8E31Aec42fb)
+
+The full live challenge and regression lifecycle requires the synthetic
+fixture to be hosted at a public HTTPS endpoint; the checked-in fixture is
+intentionally localhost-only and is not used as live evidence.
+
 ## Submission category
 
 **Intelligent Contracts — standalone reusable primitive.**

@@ -68,9 +68,16 @@ Antibody proves consensus-backed observations about a registered public test end
 - chain ID `61999`
 - RPC `https://studio.genlayer.com/api`
 
+## Verified deployment
+
+- Contract: `0x81B956AE9Ae7825CE4d2dE2FA2b9a8E31Aec42fb`
+- Deployment transaction: `0x8d20d16b94361c6e104dd3c3c7741f2605a5190f5e4a23b56ace2a0545765d7e`
+- Result: `FINALIZED / MAJORITY_AGREE / SUCCESS`
+- Explorer: [Antibody on Studionet](https://explorer-studio.genlayer.com/address/0x81B956AE9Ae7825CE4d2dE2FA2b9a8E31Aec42fb)
+
 The deployment helper verifies chain identity before deploying.
 
-## Reviewer demo to capture after deployment
+## Reviewer demo to capture after public fixture hosting
 
 Use two endpoint behaviours representing `v1` and `v2`.
 

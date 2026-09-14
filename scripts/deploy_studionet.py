@@ -38,7 +38,11 @@ def rpc_chain_id() -> int:
     request = urllib.request.Request(
         STUDIONET_RPC,
         data=payload,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "antibody-studionet-deployer/1.0",
+        },
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=20) as response:
