@@ -146,7 +146,7 @@ observed evidence.
 
 ## Suggested contribution-form entry
 
-**Title:** Antibody — On-Chain Adversarial Regression Memory for Intelligent Contracts
+**Title:** Antibody — Consensus-Verified Adversarial Regression Memory for Intelligent Contracts
 
 **Notes / Description:**
 
