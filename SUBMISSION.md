@@ -77,7 +77,18 @@ Antibody proves consensus-backed observations about a registered public test end
 
 The deployment helper verifies chain identity before deploying.
 
-## Reviewer demo to capture after public fixture hosting
+## Current live lifecycle status
+
+Program `1` and v1 (version `1`) are registered. Two challenge attempts
+finalized as `INCONCLUSIVE / TRANSPORT_UNAVAILABLE` because validators could
+not reach the Cloudflare Worker fixture. Neither attempt produced a confirmed
+counterexample. No challenger reward, breached-version result, v2/v3 replay,
+or regression-clear result is claimed. This is a fixture transport limitation,
+not a successful attack demonstration. Challenge transaction hashes and
+record IDs were not recovered into the repository evidence; see
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+## Intended reviewer demo (not yet demonstrated live)
 
 Use two endpoint behaviours representing `v1` and `v2`.
 
@@ -118,7 +129,7 @@ Capture finalized receipts showing:
 - clear `NO_VIOLATION` challenge transfers the bond into the bounty pool;
 - `INCONCLUSIVE`, including transport failures, does not mutate the corpus.
 
-## Validation status before live deployment
+## Implementation and tooling validation
 
 The repository includes:
 
@@ -129,4 +140,18 @@ The repository includes:
 - network config with stable Studionet only;
 - security and architecture documents.
 
-`docs/DEPLOYMENT.md` must only be updated with real transaction hashes after finalized on-chain execution. No fabricated deployment evidence belongs in this repository.
+`docs/DEPLOYMENT.md` records the verified contract deployment and the
+incomplete live lifecycle separately. Do not present the planned demo above as
+observed evidence.
+
+## Suggested contribution-form entry
+
+**Title:** Antibody — Consensus-Verified Adversarial Regression Memory for Intelligent Contracts
+
+**Notes / Description:**
+
+Antibody is a reusable GenLayer Intelligent Contract primitive that turns adversarial failures into permanent regression memory for future agent/service versions. Owners register a frozen invariant and fund a GEN bounty; challengers post bonded probes; validators independently replay public endpoint evidence and resolve VIOLATION, NO_VIOLATION, or INCONCLUSIVE. Confirmed violations are inherited by future versions, and REGRESSION_CLEAR applies only to the current known corpus—not universal safety. Deployed on Studionet (chain 61999). Two live challenge attempts finalized INCONCLUSIVE / TRANSPORT_UNAVAILABLE because validators could not reach the synthetic fixture. No counterexample or regression-clear result is claimed. Source, tests, and deployment receipt are linked below.
+
+**Evidence URL:** [Antibody contract on Studionet Explorer](https://explorer-studio.genlayer.com/address/0x81B956AE9Ae7825CE4d2dE2FA2b9a8E31Aec42fb)
+
+Repository: [github.com/ometere123/antibody](https://github.com/ometere123/antibody)

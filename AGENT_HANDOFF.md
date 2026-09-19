@@ -1,6 +1,10 @@
 # Antibody final-runtime handoff
 
-The repository implementation is complete enough for local/source review. The remaining work requires an environment that has the official GenLayer tooling, a funded signer and network access. Do not change the target network.
+The contract is already deployed successfully on Studionet. Do not redeploy it
+for the fixture transport problem. The remaining live-evidence gap is that
+GenLayer validators could not reach the synthetic Cloudflare Worker endpoint.
+Two challenges finalized `INCONCLUSIVE / TRANSPORT_UNAVAILABLE`; no
+counterexample or regression certification exists yet.
 
 ## Immutable target
 
@@ -15,17 +19,14 @@ The committed deployment script verifies the RPC chain ID before it asks the CLI
 
 Antibody is a standalone Intelligent Contract submission. The public fixture endpoint is test evidence only, not a product frontend.
 
-## Finish in this order
+## Current verified state and remaining work
 
-1. Work from the repository root and preserve the contract architecture. Do not swap network configuration or dependencies without a demonstrated compatibility reason.
-2. Run `python scripts/preflight.py` and `pytest tests/source -q`.
-3. Install `requirements-test.txt`; run `pytest tests/direct -v -s`. Fix any actual runtime incompatibility without weakening these invariants: independent validator replay, grounded `VIOLATION` evidence, reserved bounty solvency, permanent counterexample inheritance, stale-clear invalidation and deterministic full-corpus certification.
-4. If available, run the published GenVM linter against `contracts/antibody.py`. Record the exact version and result rather than claiming a pass without evidence.
-5. Deploy the synthetic fixture logic in `fixtures/test_agent.py` to a public HTTPS, non-production endpoint. Preserve the `POST {"input": "..."}` protocol. Use no real secrets, accounts, funds or side effects.
-6. Confirm the funded CLI signer with `genlayer account show`.
-7. Run `python scripts/deploy_studionet.py`. Do not bypass its chain-identity check.
-8. Wait for a finalized successful deployment, capture contract address, deployment transaction, source hash and CLI version.
-9. Execute a full live lifecycle:
+1. Preserve the existing contract and Studionet deployment. Keep all operations on the stable target network only.
+2. Current on-chain identifiers reported by the operator: program `1`, version `1`. Two challenges resolved `INCONCLUSIVE / TRANSPORT_UNAVAILABLE`, with no counterexamples.
+3. Establish a stable HTTPS fixture endpoint that GenLayer validators themselves can reach. Browser/client reachability alone is insufficient. Preserve the fixture's intended synthetic behavior and do not alter Antibody to work around transport.
+4. Before spending another bond, POST the documented probes to every route and verify normal HTTPS responses from an independent client.
+5. Check the exact RPC chain ID is 61999 before every transaction. Do not redeploy Antibody.
+6. Only when validator reachability is demonstrated, continue the lifecycle:
    - register a program with a synthetic cross-user-data invariant and funded bounty;
    - register vulnerable v1;
    - open a bonded challenge using the administrator-impersonation probe;
@@ -34,8 +35,9 @@ Antibody is a standalone Intelligent Contract submission. The public fixture end
    - replay CE-1 on v2 and finalize v2 to `REGRESSION_CLEAR`;
    - verify `is_regression_clear(v2, program_hash) == true`;
    - confirm a second independent failure against the active version and prove the previous clear state is invalidated until the expanded corpus is replayed.
-10. Fill `docs/DEPLOYMENT.md` only with observed transaction hashes/readbacks. Never invent evidence.
-11. Re-run preflight and tests, commit the evidence update, and push.
+7. Recover exact hashes/readbacks for the earlier inconclusive attempts if available; document them only as troubleshooting evidence.
+8. Fill `docs/DEPLOYMENT.md` only with observed transaction hashes/readbacks. Never invent evidence.
+9. Re-run preflight and tests, commit the evidence update, and push.
 
 ## Reviewer-facing invariant
 

@@ -19,3 +19,13 @@ For live reviewer evidence, deploy two **non-production** fixture behaviours:
 A second independent failure mode should be available for the corpus-growth demo so a version that was previously regression-clear can later be invalidated by a newly confirmed counterexample.
 
 The fixtures must never hold real credentials, accounts, funds or side effects. They are test evidence, not part of the Antibody product.
+
+## Current live-hosting result
+
+The operator reports that a Cloudflare Worker version of this fixture responds
+from a browser/client, but GenLayer validators could not reach it. Two
+Studionet challenge attempts therefore finalized as
+`INCONCLUSIVE / TRANSPORT_UNAVAILABLE`. These are transport troubleshooting
+results only: no violation was confirmed and no counterexample was added.
+Do not spend another challenge bond until an HTTPS endpoint has been verified
+from the validator execution path or an equivalent reliable public probe.
