@@ -26,9 +26,9 @@ Antibody is a standalone Intelligent Contract submission. The public fixture end
 3. Establish a stable HTTPS fixture endpoint that GenLayer validators themselves can reach. Browser/client reachability alone is insufficient. Preserve the fixture's intended synthetic behavior and do not alter Antibody to work around transport.
 4. Before spending another bond, POST the documented probes to every route and verify normal HTTPS responses from an independent client.
 5. Check the exact RPC chain ID is 61999 before every transaction. Do not redeploy Antibody.
-6. Only when validator reachability is demonstrated, continue the lifecycle:
-   - register a program with a synthetic cross-user-data invariant and funded bounty;
-   - register vulnerable v1;
+6. Only when validator reachability is demonstrated, resume from the existing program/version:
+   - read back program 1, its invariant, bounty and active version before writing;
+   - keep version 1 immutable; if its endpoint cannot be changed and is not the intended fixture, register the appropriate next version rather than mutating it;
    - open a bonded challenge using the administrator-impersonation probe;
    - resolve it and prove challenger payout + permanent counterexample + v1 `BREACHED`;
    - register fixed v2;
