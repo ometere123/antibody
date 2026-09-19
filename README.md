@@ -290,21 +290,9 @@ Antibody has a finalized successful deployment on Studionet (chain `61999`):
 - Transaction: `0x8d20d16b94361c6e104dd3c3c7741f2605a5190f5e4a23b56ace2a0545765d7e`
 - Explorer: [Studionet contract](https://explorer-studio.genlayer.com/address/0x81B956AE9Ae7825CE4d2dE2FA2b9a8E31Aec42fb)
 
-## Live challenge status
-
-The contract is deployed on Studionet, but the complete challenge-to-regression
-proof is not yet established. Program `1` and version `1` were registered, and
-two challenge attempts finalized as `INCONCLUSIVE / TRANSPORT_UNAVAILABLE`
-because GenLayer validators could not reach the Cloudflare Worker fixture.
-These attempts created no confirmed counterexamples, no breached-version
-proof, and no `REGRESSION_CLEAR` certification. The fixture was reachable
-from the operator's browser/client, which is not evidence of validator
-reachability. The repository deliberately does not claim the planned live
-counterexample/regression lifecycle as complete.
-
-See [deployment evidence](docs/DEPLOYMENT.md) for the verified deployment and
-the precise live-evidence gap. The implementation and local behavioral tests
-remain reviewable independently of this external fixture limitation.
+The full live challenge and regression lifecycle requires the synthetic
+fixture to be hosted at a public HTTPS endpoint; the checked-in fixture is
+intentionally localhost-only and is not used as live evidence.
 
 ## Submission category
 
